@@ -2,14 +2,14 @@ module cicc::CICC {
     // ===== Imports =====
     
     // Sui standard imports
-    use sui::coin::{Self, Coin, TreasuryCap};
+    use sui::coin::{Self, TreasuryCap};
     use sui::url::{Self};
     use sui::event;
     use sui::table::{Self, Table};
     use sui::clock::{Self, Clock};
     
     // ART20 imports
-    use artinals::ART20::{Self, NFT, CollectionCap, UserBalance};
+    use artinals::ART20::{Self,CollectionCap, UserBalance};
     
     // ===== Error Constants =====
     
@@ -19,9 +19,8 @@ module cicc::CICC {
     const E_INVALID_TOKEN_RATIO: u64 = 4;
     const E_COLLECTION_ALREADY_REGISTERED: u64 = 5;
     const E_COLLECTION_NOT_REGISTERED: u64 = 6;
-    const E_INSUFFICIENT_TOKENS: u64 = 7;
     const E_OVERFLOW: u64 = 8;
-    const E_ADDRESS_DENIED: u64 = 9;
+
     const E_NOT_CREATOR: u64 = 10;
     const E_MAX_SUPPLY_EXCEEDED: u64 = 11;
     
@@ -91,15 +90,15 @@ module cicc::CICC {
         timestamp: u64
     }
     
-    /// Emitted when tokens are redeemed for NFTs
-    public struct TokensRedeemed has copy, drop {
-        collection_id: ID,
-        tokenized_collection_id: ID,
-        nft_id: ID,
-        tokens_redeemed: u64,
-        redeemer: address,
-        timestamp: u64
-    }
+    // Emitted when tokens are redeemed for NFTs
+    // public struct TokensRedeemed has copy, drop {
+    //     collection_id: ID,
+    //     tokenized_collection_id: ID,
+    //     nft_id: ID,
+    //     tokens_redeemed: u64,
+    //     redeemer: address,
+    //     timestamp: u64
+    // }
     
     /// Emitted when token ratio is updated
     public struct TokenRatioUpdated has copy, drop {
@@ -125,8 +124,8 @@ module cicc::CICC {
             ctx
         );
         
-        // Create initial supply (100,000 tokens)
-        let initial_supply = coin::mint(&mut treasury_cap, 100000000000000, ctx); // 100,000 with 9 decimals
+        // Create initial supply (10,00,00,000 tokens)
+        let initial_supply = coin::mint(&mut treasury_cap, 100000000000000000, ctx); // 10,00,00,000 with 9 decimals
         
         // Create token registry
         let registry = TokenRegistry {
@@ -324,67 +323,67 @@ module cicc::CICC {
         });
     }
     
-    /// Redeem CICC tokens for an ART20 NFT
-    public entry fun redeem_tokens_for_nft(
-        registry: &mut TokenRegistry,
-        tokenized_collection: &mut TokenizedCollection,
-        collection_cap: &CollectionCap,
-        treasury_cap: &mut TreasuryCap<CICC>,
-        mut payment: Coin<CICC>,
-        nft: NFT,
-        clock: &Clock,
-        ctx: &mut TxContext
-    ) {
-        let sender = tx_context::sender(ctx);
+    // Redeem CICC tokens for an ART20 NFT
+    // public entry fun redeem_tokens_for_nft(
+    //     registry: &mut TokenRegistry,
+    //     tokenized_collection: &mut TokenizedCollection,
+    //     collection_cap: &CollectionCap,
+    //     treasury_cap: &mut TreasuryCap<CICC>,
+    //     mut payment: Coin<CICC>,
+    //     nft: NFT,
+    //     clock: &Clock,
+    //     ctx: &mut TxContext
+    // ) {
+    //     let sender = tx_context::sender(ctx);
         
-        // Verify collection matches
-        assert!(tokenized_collection.collection_id == ART20::get_collection_cap_id(collection_cap), E_COLLECTION_MISMATCH);
-        assert!(tokenized_collection.collection_id == ART20::get_nft_collection_id(&nft), E_COLLECTION_MISMATCH);
+    //     // Verify collection matches
+    //     assert!(tokenized_collection.collection_id == ART20::get_collection_cap_id(collection_cap), E_COLLECTION_MISMATCH);
+    //     assert!(tokenized_collection.collection_id == ART20::get_nft_collection_id(&nft), E_COLLECTION_MISMATCH);
         
-        // Check denial list
-        assert!(!ART20::is_denied(collection_cap, sender), E_ADDRESS_DENIED);
+    //     // Check denial list
+    //     assert!(!ART20::is_denied(collection_cap, sender), E_ADDRESS_DENIED);
         
-        // Get NFT ID
-        let nft_id = ART20::get_nft_id(&nft);
+    //     // Get NFT ID
+    //     let nft_id = ART20::get_nft_id(&nft);
         
-        // Calculate required tokens
-        let required_tokens = tokenized_collection.tokens_per_nft;
+    //     // Calculate required tokens
+    //     let required_tokens = tokenized_collection.tokens_per_nft;
         
-        // Verify payment is sufficient
-        assert!(coin::value(&payment) >= required_tokens, E_INSUFFICIENT_TOKENS);
+    //     // Verify payment is sufficient
+    //     assert!(coin::value(&payment) >= required_tokens, E_INSUFFICIENT_TOKENS);
         
-        // Process payment
-        if (coin::value(&payment) > required_tokens) {
-            // Calculate change amount
-            let change_amount = coin::value(&payment) - required_tokens;
-            // Return change
-            let change = coin::split(&mut payment, change_amount, ctx);
-            transfer::public_transfer(change, sender);
-        };
+    //     // Process payment
+    //     if (coin::value(&payment) > required_tokens) {
+    //         // Calculate change amount
+    //         let change_amount = coin::value(&payment) - required_tokens;
+    //         // Return change
+    //         let change = coin::split(&mut payment, change_amount, ctx);
+    //         transfer::public_transfer(change, sender);
+    //     };
         
-        // Burn the exact amount
-        coin::burn(treasury_cap, payment);
+    //     // Burn the exact amount
+    //     coin::burn(treasury_cap, payment);
         
-        // Update tokenized collection record
-        tokenized_collection.total_nfts = tokenized_collection.total_nfts - 1;
-        tokenized_collection.total_tokens = tokenized_collection.total_tokens - required_tokens;
+    //     // Update tokenized collection record
+    //     tokenized_collection.total_nfts = tokenized_collection.total_nfts - 1;
+    //     tokenized_collection.total_tokens = tokenized_collection.total_tokens - required_tokens;
         
-        // Update registry stats
-        registry.total_backed_tokens = registry.total_backed_tokens - required_tokens;
+    //     // Update registry stats
+    //     registry.total_backed_tokens = registry.total_backed_tokens - required_tokens;
         
-        // Emit event
-        event::emit(TokensRedeemed {
-            collection_id: tokenized_collection.collection_id,
-            tokenized_collection_id: object::uid_to_inner(&tokenized_collection.id),
-            nft_id,
-            tokens_redeemed: required_tokens,
-            redeemer: sender,
-            timestamp: clock::timestamp_ms(clock)
-        });
+    //     // Emit event
+    //     event::emit(TokensRedeemed {
+    //         collection_id: tokenized_collection.collection_id,
+    //         tokenized_collection_id: object::uid_to_inner(&tokenized_collection.id),
+    //         nft_id,
+    //         tokens_redeemed: required_tokens,
+    //         redeemer: sender,
+    //         timestamp: clock::timestamp_ms(clock)
+    //     });
         
-        // Transfer NFT to redeemer
-        transfer::public_transfer(nft, sender);
-    }
+    //     // Transfer NFT to redeemer
+    //     transfer::public_transfer(nft, sender);
+    // }
     
     /// Update the token ratio for a tokenized collection (only affects future mints)
     public entry fun update_token_ratio(
